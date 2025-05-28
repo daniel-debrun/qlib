@@ -1,0 +1,102 @@
+# TODO:Edit Qlib 'init from config' to suit StockFormer's period shifting approach   
+qlib_init:
+    provider_uri: "~/.qlib/qlib_data/cn_data"
+    region: cn
+market: &market csi500
+benchmark: &benchmark SH000905
+data_handler_config: &data_handler_config
+    start_time: '2021-06-04'
+    end_time: '2024-01-30'
+    fit_start_time: '2021-06-04'
+    fit_end_time: '2023-06-05'
+    instruments: *market
+    infer_processors: []
+    learn_processors:
+        - class: _DEFAULT_INFER_PROCESSORS
+        - class: _DEFAULT_LEARN_PROCESSORS
+          kwargs:
+              fields_group: label
+    label:["(Ref($close, -2) - Ref($close, -1)) / Ref($close, -1)", "Ref($close,-2) > Ref($close, -1)"]   # Corresponds to RETURN   # Corresponds to TREND_DIRECTION
+port_analysis_config: &port_analysis_config
+    strategy:
+        class: TopkDropoutStrategy
+        module_path: qlib.contrib.strategy
+        kwargs:
+            signal: <PRED>
+            topk: 50
+            n_drop: 5
+    backtest:
+        start_time: '2023-11-07'
+        end_time: '2024-01-30'
+        account: 100000000
+        benchmark: *benchmark
+        exchange_kwargs:
+            limit_threshold: 0.095
+            deal_price: close
+            open_cost: 0.0005
+            close_cost: 0.0015
+            min_cost: 5
+task:
+    model:
+        class: StockFormer
+        module_path: qlib.contrib.model.StockFormer
+        kwargs:
+            file: #Example files
+                traffic: ./data/Stock_CN_2021-06-04_2024-01-30/flow.npz
+                indicator: ./data/Stock_CN_2021-06-04_2024-01-30/trend_indicator.npz
+                adj: ./data/Stock_CN_2021-06-04_2024-01-30/corr_adj.npy
+                adjgat: ./data/Stock_CN_2021-06-04_2024-01-30/128_corr_struc2vec_adjgat.npy
+                model: ./cpt/STOCK/saved_model_Multitask
+                log: ./log/STOCK/log_Multitask
+
+            data:
+                dataset: STOCK
+                T1: 20
+                T2: 2
+                train_ratio: 0.75
+                val_ratio: 0.125
+                test_ratio: 0.125
+
+            train:
+                cuda: 0
+                max_epoch: 100
+                batch_size: 12
+                learning_rate: 0.001
+                seed: 1
+
+            param:
+                layers: 2
+                heads: 1
+                dims: 128
+                samples: 1
+                wave: sym2
+                level: 1
+
+
+    dataset:
+        class: DatasetH
+        module_path: qlib.data.dataset
+        kwargs:
+            handler:
+                class: Alpha360
+                module_path: qlib.contrib.data.handler
+                kwargs: *data_handler_config
+            segments:
+                train: ['2021-06-04', '2023-06-05']
+                valid: ['2023-06-06', '2023-11-06']
+                test: ['2023-11-07', '2024-01-30']
+    record: 
+        - class: SignalRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            model: <MODEL>
+            dataset: <DATASET>
+        - class: SigAnaRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            ana_long_short: False
+            ann_scaler: 252
+        - class: PortAnaRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            config: *port_analysis_config

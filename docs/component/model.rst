@@ -115,8 +115,8 @@ Custom Model
 ============
 
 Qlib supports custom models. If users are interested in customizing their own models and integrating the models into ``Qlib``, please refer to `Custom Model Integration <../start/integration.html>`_.
-
+Integration
 
 API
-===
+===Integration
 Please refer to `Model API <../reference/api.html#module-qlib.model.base>`_.
