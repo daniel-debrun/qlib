@@ -50,3 +50,11 @@ tags
 ./pretrain
 .idea/
 .aider*
+examples/catboost_info/learn_error.tsv
+examples/catboost_info/test_error.tsv
+examples/catboost_info/time_left.tsv
+examples/catboost_info/test/events.out.tfevents
+examples/catboost_info/learn/events.out.tfevents
+examples/catboost_info/catboost_training.json
+examples/workflow_by_code.ipynb
+examples/workflow_by_code.ipynb

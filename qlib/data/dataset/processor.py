@@ -417,3 +417,24 @@ class TimeRangeFlt(InstProcessor):
         ):
             return df
         return df.head(0)
+
+
+class OutlierFillProcessor(Processor):
+    def __init__(self, fields_group=None, sigma_threshold=3):
+        self.fields_group = fields_group
+        self.sigma_threshold = sigma_threshold
+    
+    def __call__(self, df):
+        cols = get_group_columns(df, self.fields_group)
+        data = df[cols].copy()
+        
+        for col in data.columns:
+            series = data[col]
+            mean = series.mean()
+            std = series.std()
+            outliers = (series - mean).abs() > self.sigma_threshold * std
+            data.loc[outliers, col] = float('nan')
+        
+        data.ffill(inplace=True)
+        data.bfill(inplace=True)
+        df[cols]
